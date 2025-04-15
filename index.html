@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Learn Nihongo</title>
+  <style>
+    body {
+      font-family: 'Noto Sans JP', sans-serif;
+      text-align: center;
+      background-color: #f4f4f9;
+    }
+    h2 {
+      font-size: 50px;
+      color: #3a3a3a;
+    }
+    button {
+      background-color: #F28D9D;
+      color: white;
+      font-size: 20px;
+      border: none;
+      padding: 10px;
+      margin: 5px;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+    button:hover {
+      background-color: #F7C6D5;
+    }
+    .feedback {
+      font-size: 20px;
+      margin-top: 20px;
+      color: #e91e63;
+    }
+    #score, #streak {
+      font-size: 25px;
+      margin-top: 15px;
+    }
+    .mode-toggle {
+      font-size: 18px;
+      margin-top: 20px;
+      cursor: pointer;
+      background-color: #00796b;
+      padding: 8px;
+      border-radius: 5px;
+      color: white;
+    }
+    .mode-toggle:hover {
+      background-color: #004d40;
+    }
+    #options {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      max-width: 300px;
+      margin: 0 auto;
+    }
+    #options button {
+      width: 100%;
+    }
+    #practiceArea {
+      display: none;
+      margin-top: 30px;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 15px;
+      max-width: 600px;
+      margin: 30px auto;
+      text-align: center;
+    }
+	#levelButtons {
+  background-color: #f4f4f4;
+  padding: 10px;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+#levelButtons {
+  position: fixed;
+  right: 20px;
+  top: 100px; /* Adjust the top distance if necessary */
+  display: flex;
+  flex-direction: column; /* Stack the buttons vertically */
+  gap: 10px;
+  margin-top: 30px;
+  margin-bottom: 20px;
+  align-items: flex-end; /* Align buttons to the right */
+}
+
+#levelButtons button {
+  background-color: #00796b; /* Green color */
+  color: white;
+  font-size: 16px; /* Make the font smaller */
+  border: none;
+  padding: 8px 15px; /* Slightly smaller padding */
+  margin: 5px;
+  cursor: pointer;
+  border-radius: 5px;
+}
+
+#levelButtons button:hover {
+  background-color: #004d40; /* Darker green on hover */
+}
+  </style>
+
+
+
+
+  <link rel="manifest" href="manifest.json">
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js');
+    }
+  </script>
+</head>
+
+<body>
+
+<div id="levelButtons" style="margin-top: 30px;"></div>
+
+  <!-- This will display the current level -->
+  <h1 id="currentLevelHeader" style="color: #3a3a3a;"></h1>
+
+  <br><br><br>
+
+<!-- The Question Area -->
+<h2 id="question">あ</h2>
+
+<div id="options"></div>
+
+<p class="feedback" id="feedback"></p>
+<p id="score">Score: 0</p>
+<p id="streak">Correct Streak: 0</p>
+
+<!-- Buttons -->
+<button id="modeSwitchBtn" class="mode-toggle" onclick="toggleMode()">Switch to Katakana</button>
+<button id="practiceBtn" class="mode-toggle" onclick="showPractice()">Let’s Practice</button>
+<button class="mode-toggle" id="backBtn" style="display:none;" onclick="goBackToQuiz()">Back to Quiz</button>
+
+<!-- Practice Area -->
+<div id="practiceArea"></div>
+
+<script>
+const hiraganaData = [
+  { kana: "あ", romaji: "a" }, { kana: "い", romaji: "i" }, { kana: "う", romaji: "u" }, { kana: "え", romaji: "e" }, { kana: "お", romaji: "o" },
+  { kana: "か", romaji: "ka" }, { kana: "き", romaji: "ki" }, { kana: "く", romaji: "ku" }, { kana: "け", romaji: "ke" }, { kana: "こ", romaji: "ko" },
+  { kana: "さ", romaji: "sa" }, { kana: "し", romaji: "shi" }, { kana: "す", romaji: "su" }, { kana: "せ", romaji: "se" }, { kana: "そ", romaji: "so" },
+  { kana: "た", romaji: "ta" }, { kana: "ち", romaji: "chi" }, { kana: "つ", romaji: "tsu" }, { kana: "て", romaji: "te" }, { kana: "と", romaji: "to" },
+  { kana: "な", romaji: "na" }, { kana: "に", romaji: "ni" }, { kana: "ぬ", romaji: "nu" }, { kana: "ね", romaji: "ne" }, { kana: "の", romaji: "no" },
+  { kana: "は", romaji: "ha" }, { kana: "ひ", romaji: "hi" }, { kana: "ふ", romaji: "fu" }, { kana: "へ", romaji: "he" }, { kana: "ほ", romaji: "ho" },
+  { kana: "ま", romaji: "ma" }, { kana: "み", romaji: "mi" }, { kana: "む", romaji: "mu" }, { kana: "め", romaji: "me" }, { kana: "も", romaji: "mo" },
+  { kana: "や", romaji: "ya" }, { kana: "ゆ", romaji: "yu" }, { kana: "よ", romaji: "yo" },
+  { kana: "ら", romaji: "ra" }, { kana: "り", romaji: "ri" }, { kana: "る", romaji: "ru" }, { kana: "れ", romaji: "re" }, { kana: "ろ", romaji: "ro" },
+  { kana: "わ", romaji: "wa" }, { kana: "を", romaji: "wo" }, { kana: "ん", romaji: "n" }
+];
+
+const katakanaData = [
+  { kana: "ア", romaji: "a" }, { kana: "イ", romaji: "i" }, { kana: "ウ", romaji: "u" }, { kana: "エ", romaji: "e" }, { kana: "オ", romaji: "o" },
+  { kana: "カ", romaji: "ka" }, { kana: "キ", romaji: "ki" }, { kana: "ク", romaji: "ku" }, { kana: "ケ", romaji: "ke" }, { kana: "コ", romaji: "ko" },
+  { kana: "サ", romaji: "sa" }, { kana: "シ", romaji: "shi" }, { kana: "ス", romaji: "su" }, { kana: "セ", romaji: "se" }, { kana: "ソ", romaji: "so" },
+  { kana: "タ", romaji: "ta" }, { kana: "チ", romaji: "chi" }, { kana: "ツ", romaji: "tsu" }, { kana: "テ", romaji: "te" }, { kana: "ト", romaji: "to" },
+  { kana: "ナ", romaji: "na" }, { kana: "ニ", romaji: "ni" }, { kana: "ヌ", romaji: "nu" }, { kana: "ネ", romaji: "ne" }, { kana: "ノ", romaji: "no" },
+  { kana: "ハ", romaji: "ha" }, { kana: "ヒ", romaji: "hi" }, { kana: "フ", romaji: "fu" }, { kana: "ヘ", romaji: "he" }, { kana: "ホ", romaji: "ho" },
+  { kana: "マ", romaji: "ma" }, { kana: "ミ", romaji: "mi" }, { kana: "ム", romaji: "mu" }, { kana: "メ", romaji: "me" }, { kana: "モ", romaji: "mo" },
+  { kana: "ヤ", romaji: "ya" }, { kana: "ユ", romaji: "yu" }, { kana: "ヨ", romaji: "yo" },
+  { kana: "ラ", romaji: "ra" }, { kana: "リ", romaji: "ri" }, { kana: "ル", romaji: "ru" }, { kana: "レ", romaji: "re" }, { kana: "ロ", romaji: "ro" },
+  { kana: "ワ", romaji: "wa" }, { kana: "ヲ", romaji: "wo" }, { kana: "ン", romaji: "n" }
+];
+
+let score = 0;
+let streak = 0;
+let answered = false;
+let isKatakana = false;
+let currentLevel = 0;
+
+function toggleMode() {
+  isKatakana = !isKatakana;
+  document.getElementById("modeSwitchBtn").textContent = isKatakana ? "Switch to Hiragana" : "Switch to Katakana";
+
+  if (document.getElementById("practiceArea").style.display === "grid") {
+    showPractice();
+  } else {
+    resetQuiz();
+  }
+}
+
+
+function shuffle(arr) {
+  return arr.sort(() => Math.random() - 0.5);
+}
+
+function getCurrentDataSet() {
+  const data = isKatakana ? katakanaData : hiraganaData;
+  const allowedRomaji = levels.slice(0, currentLevel + 1).flat(); // Get allowed romaji up to the selected level
+  return data.filter(item => allowedRomaji.includes(item.romaji)); // Filter kana based on level
+}
+
+
+function loadQuestion() {
+  answered = false;
+  document.getElementById("feedback").textContent = "";
+
+  const currentData = getCurrentDataSet();
+  const correct = currentData[Math.floor(Math.random() * currentData.length)];
+  const wrongOptions = shuffle(currentData.filter(item => item.romaji !== correct.romaji)).slice(0, 3);
+  const options = shuffle([correct, ...wrongOptions]);
+
+  document.getElementById("question").textContent = correct.kana;
+
+  const container = document.getElementById("options");
+  container.innerHTML = "";
+
+  options.forEach(opt => {
+    const btn = document.createElement("button");
+    btn.textContent = opt.romaji;
+    btn.onclick = () => {
+      if (answered) return;
+      answered = true;
+
+      if (opt.romaji === correct.romaji) {
+  score++;
+  streak++;
+  document.getElementById("feedback").textContent = "✅ Correct!";
+} else {
+  score = 0;  // Reset score to 0 on wrong answer
+  document.getElementById("feedback").textContent = "❌ Wrong! Correct answer: " + correct.romaji;
+}
+
+
+      document.getElementById("score").textContent = "Score: " + score;
+      document.getElementById("streak").textContent = "Correct Streak: " + streak;
+
+      setTimeout(loadQuestion, 1000);
+    };
+    container.appendChild(btn);
+  });
+}
+
+function resetQuiz() {
+  score = 0;  // Reset score to 0
+  loadQuestion();
+  document.getElementById("score").textContent = "Score: 0";
+  document.getElementById("streak").textContent = "Correct Streak: " + streak;  // Keep streak intact
+}
+
+
+
+
+function showPractice() {
+  document.getElementById("options").style.display = "none";
+  document.getElementById("question").style.display = "none";
+  document.getElementById("feedback").style.display = "none";
+  document.getElementById("practiceArea").style.display = "grid";
+  document.getElementById("backBtn").style.display = "inline-block";
+  document.getElementById("practiceBtn").style.display = "none";
+document.getElementById("levelButtons").style.display = "none";
+
+
+
+  const data = getCurrentDataSet();
+  const practiceDiv = document.getElementById("practiceArea");
+  practiceDiv.innerHTML = "";
+  practiceDiv.style.gridTemplateColumns = "repeat(auto-fill, minmax(100px, 1fr))";
+  practiceDiv.style.gridGap = "10px";
+
+  data.forEach(item => {
+    const box = document.createElement("div");
+    box.style.border = "1px solid #ddd";
+    box.style.padding = "10px";
+    box.style.borderRadius = "8px";
+    box.style.backgroundColor = "#fce4ec";
+    box.style.textAlign = "center";
+    box.innerHTML = `<strong style="font-size: 28px;">${item.kana}</strong><br><span>${item.romaji}</span>`;
+    practiceDiv.appendChild(box);
+  });
+}
+
+function goBackToQuiz() {
+  document.getElementById("options").style.display = "grid";
+  document.getElementById("question").style.display = "block";
+  document.getElementById("feedback").style.display = "block";
+  document.getElementById("practiceArea").style.display = "none";
+  document.getElementById("backBtn").style.display = "none";
+  document.getElementById("practiceBtn").style.display = "inline-block";
+  
+  // Re-display the level buttons when returning from practice mode
+  document.getElementById("levelButtons").style.display = "flex";
+  
+  // Set the level header again when returning from practice mode
+  document.getElementById("currentLevelHeader").textContent = "第" + (currentLevel + 1) + "回";
+
+  loadQuestion();
+}
+
+
+
+const levels = [
+  ["a", "i", "u", "e", "o", "ka", "ki", "ku", "ke", "ko"],
+  ["sa", "shi", "su", "se", "so"],
+  ["ta", "chi", "tsu", "te", "to"],
+  ["na", "ni", "nu", "ne", "no"],
+  ["ha", "hi", "fu", "he", "ho"],
+  ["ma", "mi", "mu", "me", "mo"],
+  ["ya", "yu", "yo"],
+  ["ra", "ri", "ru", "re", "ro"],
+  ["wa", "wo", "n"]
+];
+
+function createLevelButtons() {
+  const container = document.getElementById("levelButtons");
+  container.innerHTML = ""; // Clear any existing buttons
+  levels.forEach((_, i) => {
+    const btn = document.createElement("button");
+    btn.textContent = `第 ${i + 1}回`;
+    btn.onclick = () => {
+      currentLevel = i;
+      streak = 0;
+      score = 0;
+      document.getElementById("score").textContent = "Score: 0";
+      document.getElementById("streak").textContent = "Correct Streak: 0";
+      document.getElementById("currentLevelHeader").textContent = "第" + (currentLevel + 1) + "回"; // Set the level header
+      loadQuestion(); // Reload questions after level change
+    };
+    container.appendChild(btn);
+  });
+}
+
+createLevelButtons();
+loadQuestion();
+document.getElementById("currentLevelHeader").textContent = "第1回";
+</script>
+
+</body>
+</html>
